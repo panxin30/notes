@@ -1,0 +1,1 @@
+ssh $IP passwd brokerwork --stdin < R_PWD.txt

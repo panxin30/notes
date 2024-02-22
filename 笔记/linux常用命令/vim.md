@@ -23,3 +23,16 @@ gu=把选定范围全部小写
 G=到文件结束
 ## 查看每行结尾是否有空格或乱码
 `set invlist`
+
+## linux下查看文件编码格式
+```
+root@ali-hz-crm3-k8s-master01:~# file /tmp/product.js
+/tmp/product.js: ISO-8859 text, with CRLF line terminators
+root@ali-hz-crm3-k8s-master01:~# file /tmp/id.js
+/tmp/id.js: UTF-8 Unicode (with BOM) text, with CRLF line terminators
+```
+## 文件编码转换
+1.在Vim中直接进行转换文件编码,比如将一个文件转换成utf-8格式
+`:set fileencoding=utf-8`
+2.enconv 转换文件编码，比如要将一个GBK编码的文件转换成UTF-8编码，操作如下
+`enconv -L zh_CN -x UTF-8 filename`

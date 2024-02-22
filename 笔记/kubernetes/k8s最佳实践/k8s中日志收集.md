@@ -1,5 +1,17 @@
-## kubernetes log solustion:Log-pilot + Kafka + Logstash
-系统ubuntu18.04,k8sv1.17.0
+## **Docker JSON 日志驱动将日志的每一行当作一条独立的消息。 该日志驱动不直接支持多行消息。你需要在日志代理级别或更高级别处理多行消息。**
+
+参考：https://help.aliyun.com/document_detail/50441.html
+
+# kubernetes log solustion:Log-pilot + Kafka + Logstash
+log-pilot 具有如下特性：
+
+*   一个单独的 log 进程收集机器上所有容器的日志。不需要为每个容器启动一个 log 进程。
+*   支持文件日志和 stdout。docker log dirver 亦或 logspout 只能处理 stdout，log-pilot 不仅支持收集 stdout 日志，还可以收集文件日志。
+*   声明式配置。当您的容器有日志要收集，只要通过 label 声明要收集的日志文件的路径，无需改动其他任何配置，log-pilot 就会自动收集新容器的日志。
+*   支持多种日志存储方式。无论是强大的阿里云日志服务，还是比较流行的 elasticsearch 组合，甚至是 graylog，log-pilot 都能把日志投递到正确的地点。
+*   开源。log-pilot 完全开源，您可以从[Git项目地址](https://github.com/AliyunContainerService/log-pilot)下载代码。如果现有的功能不能满足您的需要，欢迎提 issue。
+
+# 系统ubuntu18.04,k8sv1.17.0
 ### **安装log-pilot**
 ```
 apiVersion: apps/v1

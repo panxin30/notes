@@ -1,4 +1,4 @@
-
+```
 user  nginx;
 worker_processes  2;
 
@@ -134,3 +134,4 @@ http {
         }
 
 }
+```

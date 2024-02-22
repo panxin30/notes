@@ -6,16 +6,25 @@
 mongo 127.0.0.1:27017
 use test
 db.users.findOne()
+**获取帮助**
+~~~
+db.help();
+~~~
 
 ### **2. mongo --eval 运行一段脚本**
 
-**不进入交互模式，直接在 OS 的命令行下运行一段mongodb脚本,打印出所有dbname。**
-
-mongo 127.0.0.1:27017/test --eval "printjson(db.users.findOne())"
-`mongo 127.0.0.1:27017/admin -uadmin -pWAer8R59G6 --eval "db.adminCommand('listDatabases')"`
+**不进入交互模式，直接在 OS 的命令行下运行一段mongodb脚本,打印出所有dbname或表名。**
+```
+mongo --quiet 127.0.0.1:27017/test --eval "printjson(db.users.findOne())"
+mongo 127.0.0.1:27017/admin -uadmin -pWAer8R59G6 --eval "db.adminCommand('listDatabases')"
+mongo 127.0.0.1:27017/admin -uadmin -pWAer8R59G6 --eval "db.getCollectionNames()"
+# 批量删除mongo库用的到
+mongo <yourDb> --host <yourHost> --port <yourPort> --eval 'db.dropDatabase()'
+mongo 192.168.60.217:27017/jimmytest2 -uadmin -pleanwork2019 --authenticationDatabase=admin --eval 'db.dropDatabase()'
+```
 ### **3. 在OS命令行下，运行一个js文件**
 
-mongo 127.0.0.1:27017/test userfindone.js
+mongo --quiet 127.0.0.1:27017/test userfindone.js
 
 userfindone.js 的内容：
 printjson(db.users.findOne());

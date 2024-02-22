@@ -6,6 +6,7 @@ set -ex
 
 SCRIPT_DIR=$(pwd)
 UNIX_NAME=$(uname -a | awk -F ' ' '{print $4}' | awk -F '-' '{print $2}')
+TIMED=$(date +"%Y%m%d%H%M%S")
 
 Centos (){
 #for centos agent

@@ -1,4 +1,8 @@
-time curl 可以看出用l多少时间
+```
+curl --help
+curl --silent
+```
+time curl 可以看出用多少时间
 
 `curl -X POST https://prod-uploadpic-nei.lwork.com:8443`
 `curl ipinfo.io`
@@ -56,4 +60,5 @@ curl --http1.0 --next --no-keepalive -X POST "https://www. domain.com/requestUri
     -H "token: tokenValue" \
  --data "{\"jsons\":[{\"id\":\"1\",\"value\":1}],\"type\":\"M\",\"name\":\"fei\"}"
 ```
-
+# 内网服务器查看出口IP
+`curl ipinfo.io`

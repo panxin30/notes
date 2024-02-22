@@ -140,6 +140,7 @@ deb http://mirrors.ustc.edu.cn/kubernetes/apt/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubelet kubeadm kubectl ipvsadm
+sudo apt-mark hold kubelet kubeadm kubectl ipvsadm #锁定服务，不更新
 ```
 # 配置第一个master节点
 ```

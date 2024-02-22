@@ -1,1 +1,0 @@
-参考：https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/kubelet-integration/

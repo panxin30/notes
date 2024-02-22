@@ -3,7 +3,7 @@ centos 7
 Java是基于GUN Standard C library(glibc)
 Alpine是基于MUSL libc(mini libc)
 安装参考:
-~~~html
+~~~
 https://github.com/sgerrand/alpine-pkg-glibc
 ~~~
 Dockerfile

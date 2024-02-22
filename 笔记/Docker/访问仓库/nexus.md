@@ -69,3 +69,6 @@ sudo docker push 172.16.77.71:8082/${ARTIFACT}:v${releaseNum}
 sudo docker rmi 172.16.77.71:8082/${ARTIFACT}:v${releaseNum}
 sudo docker logout 172.16.77.71:8082
 ```
+# 上传本地镜像到私有仓库
+docker tag 120.76.0.0:8082/alpine-jdk8:v1 192.168.0.96:8082/alpine-jdk8:v1
+docker push 192.168.0.96:8082/alpine-jdk8:v1

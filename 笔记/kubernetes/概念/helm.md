@@ -1,6 +1,6 @@
 官网：[https://github.com/helm/helm](https://github.com/helm/helm)
+ 参考：https://helm.sh/zh/docs/helm/helm_upgrade/
               helm.sh
-![](../../images/screenshot_1565838579374.png)
 当前版本，3.1.2
 
 **helm把k8s资源打包到一个chart中，制作并测试完成各个chart和chart本身的依赖关系

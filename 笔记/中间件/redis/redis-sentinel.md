@@ -3,23 +3,24 @@
 
 官方网站
 https://redis.io/topics/sentinel
-
-1.
-Sentinel是一个管理多个redis实例的工具，它可以实现对redis的监控、通知、自动故障转移。sentinel不断的检测redis实例是否可以正常工作，通过API向其他程序报告redis的状态，如果redis master不能工作，则会自动启动故障转移进程，将其中的一个slave提升为master，其他的slave重新设置新的master实例。也就是说，它提供了：
+**Sentinel**是一个管理多个redis实例的工具，它可以实现对redis的监控、通知、自动故障转移。sentinel不断的检测redis实例是否可以正常工作，通过API向其他程序报告redis的状态，如果redis master不能工作，则会自动启动故障转移进程，将其中的一个slave提升为master，其他的slave重新设置新的master实例。也就是说，它提供了：
 监控（Monitoring）： Sentinel 会不断地检查你的主实例和从实例是否正常。
 通知（Notification）： 当被监控的某个 Redis 实例出现问题时， Sentinel 进程可以通过 API 向管理员或者其他应用程序发送通知。
 自动故障迁移（Automatic failover）： 当一个主redis实例失效时， Sentinel 会开始记性一次failover， 它会将失效主实例的其中一个从实例升级为新的主实例， 并让失效主实例的其他从实例改为复制新的主实例； 而当客户端试图连接失效的主实例时， 集群也会向客户端返回新主实例的地址， 使得集群可以使用新主实例代替失效实例。
 Redis Sentinel自身也是一个分布式系统， 你可以在一个架构中运行多个 Sentinel 进程， 这些进程使用流言协议（gossip protocols)来接收关于主Redis实例是否失效的信息， 然后使用投票协议来决定是否执行自动failover，以及评选出从Redis实例作为新的主Redis实例。
-1.启动sentinel的方法
+
+# 1.启动sentinel的方法
 当前Redis stable版已经自带了redis-sentinel这个工具。虽然 Redis Sentinel 已经提供了一个单独的可执行文件 redis-sentinel ， 但实际上它只是一个运行在特殊模式下的 Redis实例， 你可以在启动一个普通 Redis实例时通过给定 –sentinel 选项来启动 Redis Sentinel 实例。也就是说：
 redis-sentinel /path/to/sentinel.conf
 等同于
 redis-server /path/to/sentinel.conf --sentinel
 其中sentinel.conf是redis的配置文件，Redis sentinel会需要写入配置文件来保存sentinel的当前状态。当配置文件无法写入时，Sentinel启动失败。
 
-#### 2.sentinel的配置
+# 2.sentinel的配置
 
 一个简单的sentinel配置文件实例如下：
+```
+
 port 26329
 sentinel monitor myredis 127.0.0.1 6379 2
 sentinel down-after-milliseconds mymaster 60000
@@ -27,30 +28,43 @@ sentinel failover-timeout mymaster 180000
 sentinel parallel-syncs mymaster 1
 sentinel notification-script myredis <script-path>
 sentinel 选项的名字 主Redis实例的名字 选项的值
-配置文件的格式为：
-第一行配置指示 Sentinel 去监视一个名为 mymaster 的主redis实例， 这个主实例的 IP 地址为本机地址127.0.0.1 ， 端口号为 6379 ， 而将这个主实例判断为失效至少需要 2 个 Sentinel 进程的同意，只要同意 Sentinel 的数量不达标，自动failover就不会执行。同时，一个Sentinel都需要获得系统中大多数Sentinel进程的支持， 才能发起一次自动failover， 并预留一个新主实例配置的编号。而当超过半数Redis不能正常工作时，自动故障转移是无效的。
-各个选项的功能如下：
-down-after-milliseconds 选项指定了 Sentinel 认为Redis实例已经失效所需的毫秒数。
-当实例超过该时间没有返回PING，或者直接返回错误， 那么 Sentinel 将这个实例标记为主观下线（subjectively down，简称 SDOWN ）。只有一个 Sentinel进程将实例标记为主观下线并不一定会引起实例的自动故障迁移： 只有在足够数量的 Sentinel 都将一个实例标记为主观下线之后，实例才会被标记为客观下线（objectively down， 简称 ODOWN ）， 这时自动故障迁移才会执行。具体的行为如下：
-（1）. 每个 Sentinel 每秒一次向它所监控的主实例、从实例以及其他 Sentinel 实例发送一个 PING 命令。当一个实例（instance）距离最后一次有效回复 PING 命令的时间超过 down-after-milliseconds 选项所指定的值， 那么这个实例会被 Sentinel 标记为主观下线。如果一个主实例被标记为主观下线， 并且有足够数量的 Sentinel （至少要达到配置文件指定的数量）在指定的时间范围内同意这一判断， 那么这个主实例被标记为客观下线。
-（2）.在一般情况下， 每个 Sentinel 进程会以每 10 秒一次的频率向它已知的所有主实例和从实例发送 INFO 命令。 当一个主实例被 Sentinel实例标记为客观下线时， Sentinel 向下线主实例的所有从实例发送 INFO 命令的频率会从 10 秒一次改为每秒一次。
-（3）.当没有足够数量的 Sentinel 同意主实例已经下线， 主Redis服务实例的客观下线状态就会被移除。 当主服务器重新向 Sentinel 的PING 命令返回有效回复时， 主服务器的主观下线状态就会被移除。
-parallel-syncs 选项指定了在执行故障转移时， 最多可以有多少个从Redis实例在同步新的主实例， 在从Redis实例较多的情况下这个数字越小，同步的时间越长，完成故障转移所需的时间就越长。
-尽管复制过程的绝大部分步骤都不会阻塞从实例， 但从redis实例在载入主实例发来的 RDB 文件时， 仍然会造成从实例在一段时间内不能处理命令请求： 如果全部从实例一起对新的主实例进行同步， 那么就可能会造成所有从Redis实例在短时间内全部不可用的情况出现。
-所以从实例被设置为允许使用过期数据集（参见对 redis.conf 文件中对 slave-serve-stale-data 选项），可以缓解所有从实例都在同一时间向新的主实例发送同步请求的负担。你可以通过将这个值设为 1 来保证每次只有一个从Redis实例处于不能处理命令请求的同步状态。
-failover-timeout如果在该时间（ms）内未能完成failover操作，则认为该failover失败。
-notification-script: 指定sentinel检测到该监控的redis实例指向的实例异常时，调用的报警脚本。该配置项可选，但是很常用。
+```
 
-#### 3. Sentinel集群的运行机制
+配置文件的格式为：
+### 第一行配置指示 Sentinel 去监视一个名为 mymaster 的主redis实例， 这个主实例的 IP 地址为本机地址127.0.0.1 ， 端口号为 6379 ， 而将这个主实例判断为失效至少需要 2 个 Sentinel 进程的同意，只要同意 Sentinel 的数量不达标，自动failover就不会执行。同时，一个Sentinel都需要获得系统中大多数Sentinel进程的支持， 才能发起一次自动failover， 并预留一个新主实例配置的编号。而当超过半数Redis不能正常工作时，自动故障转移是无效的。
+# 各个选项的功能如下：
+### **down-after-milliseconds** 选项指定了 Sentinel 认为Redis实例已经失效所需的毫秒数。
+当实例超过该时间没有返回PING，或者直接返回错误， 那么 Sentinel 将这个实例标记为主观下线（subjectively down，简称 SDOWN ）。只有一个 Sentinel进程将实例标记为主观下线并不一定会引起实例的自动故障迁移： 只有在足够数量的 Sentinel 都将一个实例标记为主观下线之后，实例才会被标记为客观下线（objectively down， 简称 ODOWN ）， **这时自动故障迁移才会执行。具体的行为如下：**
+### （1）. 每个 Sentinel 每秒一次向它所监控的主实例、从实例以及其他 Sentinel 实例发送一个 PING 命令。当一个实例（instance）距离最后一次有效回复 PING 命令的时间超过 down-after-milliseconds 选项所指定的值， 那么这个实例会被 Sentinel 标记为主观下线。如果一个主实例被标记为主观下线， 并且有足够数量的 Sentinel （至少要达到配置文件指定的数量）在指定的时间范围内同意这一判断， 那么这个主实例被标记为客观下线。
+
+
+### （2）.在一般情况下， 每个 Sentinel 进程会以每 10 秒一次的频率向它已知的所有主实例和从实例发送 INFO 命令。 当一个主实例被 Sentinel实例标记为客观下线时， Sentinel 向下线主实例的所有从实例发送 INFO 命令的频率会从 10 秒一次改为每秒一次。
+
+
+### （3）.当没有足够数量的 Sentinel 同意主实例已经下线， 主Redis服务实例的客观下线状态就会被移除。 当主服务器重新向 Sentinel 的PING 命令返回有效回复时， 主服务器的主观下线状态就会被移除。
+
+
+**parallel-syncs** 选项指定了在执行故障转移时， 最多可以有多少个从Redis实例在同步新的主实例， 在从Redis实例较多的情况下这个数字越小，同步的时间越长，完成故障转移所需的时间就越长。
+尽管复制过程的绝大部分步骤都不会阻塞从实例， 但从redis实例在载入主实例发来的 RDB 文件时， 仍然会造成从实例在一段时间内不能处理命令请求： 如果全部从实例一起对新的主实例进行同步， 那么就可能会造成所有从Redis实例在短时间内全部不可用的情况出现。
+
+所以从实例被设置为允许使用过期数据集（参见对 redis.conf 文件中对 slave-serve-stale-data 选项），可以缓解所有从实例都在同一时间向新的主实例发送同步请求的负担。你可以通过将这个值设为 1 来保证每次只有一个从Redis实例处于不能处理命令请求的同步状态。
+
+**failover-timeout**如果在该时间（ms）内未能完成failover操作，则认为该failover失败。
+**notification-script**: 指定sentinel检测到该监控的redis实例指向的实例异常时，调用的报警脚本。该配置项可选，但是很常用。
+
+# 3. Sentinel集群的运行机制
 
 一个 Sentinel进程可以与其他多个 Sentinel进程进行连接， 每个 Sentinel进程之间可以互相检查对方的可用性， 并进行信息交换。
 和其他集群不同的是，你无须设置其他Sentinel的地址，Sentinel进程可以通过发布与订阅来自动发现正在监视相同主实例的其他Sentinel。同样，你也不必手动列出主实例属下的所有从实例，因为Sentinel实例可以通过询问主实例来获得所有从实例的信息。
 每个 Sentinel 都订阅了被它监视的所有主服务器和从服务器的 sentinel:hello 频道， 查找之前未出现过的 sentinel进程。 当一个 Sentinel 发现一个新的 Sentinel 时，它会将新的 Sentinel 添加到一个列表中，这个列表保存了 Sentinel 已知的，监视同一个主服务器的所有其他Sentinel。
 
-#### 4. 启动Redis和sentinel
+# 4. 启动Redis和sentinel
 
 下面的测试环境为centos el6.x86_64，Redis 3.2.3。下面首先配置一个小型的M/2S环境。
-/etc/redis/redis-m.conf
+# master
+```
+cat /etc/redis/redis-m.conf
+
 daemonize yes
 pidfile /var/run/redis/redis-server-m.pid
 port 6379
@@ -64,8 +78,12 @@ appendonly yes
 appendfilename "appendonly.aof"
 ##not to be a slave
 #slaveof no one
+```
+# slave1
+```
 
-/etc/redis/redis-s1.conf
+
+cat /etc/redis/redis-s1.conf
 daemonize yes
 pidfile /var/run/redis/redis-server-s1.pid
 port 6380
@@ -79,8 +97,12 @@ appendonly yes
 appendfilename "appendonly.aof"
 ##to be a slave
 slaveof 127.0.0.1 6379
+```
+# slave2
+```
 
-/etc/redis/redis-s2.conf
+
+cat /etc/redis/redis-s2.conf
 daemonize yes
 pidfile /var/run/redis/redis-server-s2.pid
 port 6381
@@ -94,6 +116,8 @@ appendonly yes
 appendfilename "appendonly.aof"
 ##to be a slave
 slaveof 127.0.0.1 6379
+```
+
 启动后，查看进程和复制状态是否正常：
 ps -ef | grep redis
 root 17560 1 0 09:48 ? 00:00:00 redis-server *:6379 
@@ -113,12 +137,16 @@ repl_backlog_size:1048576
 repl_backlog_first_byte_offset:2
 repl_backlog_histlen:546
 前面我们了解了，Sentinel可以通过master Redis实例来获得它的从实例的信息。所以每一个Sentinel只配置主实例的监控即可。Sentinel之间端口有所不同。
+```
+
 port 26379
 sentinel monitor myredis 127.0.0.1 6379 2
 sentinel down-after-milliseconds myredis 60000
 sentinel failover-timeout myredis 180000
 sentinel parallel-syncs myredis 1
 sentinel notification-script myredis /etc/redis/log-issues.sh
+```
+
 其中，通知脚本简单的记录一下failover事件。
 #!/bin/bash
 

@@ -4,6 +4,7 @@ NAS网络xx存储：nfs，cifs
 ```
 官网：https://kubernetes.io/zh/docs/concepts/storage/volumes/
 https://kubernetes.io/zh/docs/tasks/configure-pod-container/configure-pod-configmap/
+https://kubernetes.io/zh/docs/concepts/configuration/secret/
 **容器以 [subPath]卷挂载方式使用 ConfigMap 时，将无法接收 ConfigMap 的更新。**
 
 kubectl explain pods.spec.env
@@ -17,7 +18,7 @@ kubectl explain pods.spec.env
                 （2）通过entrypoint脚本来预处理变量为配置文件中的配置信息
         4、存储卷
 ```
-## **hostPath**
+#  **hostPath**
 `hostPath`卷能将主机节点文件系统上的文件或目录挂载到您的 Pod 中。 虽然这不是大多数 Pod 需要的，但是它为一些应用程序提供了强大的逃生舱。
 
 例如，`hostPath`的一些用法有：
@@ -32,10 +33,10 @@ kubectl explain pods.spec.env
 **DirectoryOrCreate**如果在给定路径上什么都不存在，那么将根据需要创建空目录，权限设置为 0755，具有与 Kubelet 相同的组和所有权。
 
 **FileOrCreate**如果在给定路径上什么都不存在，那么将在那里根据需要创建空文件，权限设置为 0644，具有与 Kubelet 相同的组和所有权。
-## configmap-secret
+# **configmap-secret**
 两种特殊的存储卷，给我们管理员或用户提供了从集群外部向pod内部的应用注入配置信息
 ## 开发，QA，生产环境可能所使用的内存或cpu各不相同，因此得做3个镜像，这样太麻烦，因此可以用配置中心，起三份配置文件
-## k8s也面临同样问题
+## **k8s也面临同样问题**
 因此我们不把配置文件写死在镜像中，启用configmap
 1、启动多个pod的时候可以共享使用同一个configmap，用configmap关联到当前pod，从configmap中读取环境变量，每次启动pod时候获取
 2、也可以把configmap当做存储卷，挂载在容器中的某个目录，这个目录恰好是应用程序读取配置信息的文件路径，支持动态修改。有时候可能需要手动重载
@@ -45,7 +46,42 @@ kubectl explain pods.spec.volumes.configMap-放的配置信息，也可以当存
 kubectl explain configMap
 kubectl  create configmap --help 属于名称空间
 ```
-pod-config.yaml
+## **文件名当键,文件内容当值**
+```
+root@ali-hk-public-ops-k8s-master01:~/tony# kubectl create configmap kubeconf --from-file=/root/tony/kubeconf -n lwork
+configmap/kubeconf created
+#这个configmap kubeconf内容是.kube/config
+
+root@ali-hk-public-ops-k8s-master01:~/tony# kubectl get cm -n lwork kubeconf -o yaml
+apiVersion: v1
+data:
+  kubeconf: |
+    apiVersion: v1
+    clusters:
+    - cluster:
+        certificate-authority-data:
+        server: https://172.17.128.186:6443
+      name: kubernetes
+    contexts:
+    - context:
+        cluster: kubernetes
+        user: kubernetes-admin
+      name: kubernetes-admin@kubernetes
+    current-context: kubernetes-admin@kubernetes
+    kind: Config
+    preferences: {}
+    users:
+    - name: kubernetes-admin
+      user:
+        client-certificate-data:
+        client-key-data:
+kind: ConfigMap
+metadata:
+  name: kubeconf
+  namespace: lwork
+```
+-----------------------------------------------
+# pod-config.yaml
 已经建立了一个configmap,名字叫nginx-config
 `kubectl create configmap nginx-config --from-file=./www.conf` 文件名当键，文件内容当值
 `kubectl create configmap citylist-config --from-file=/root/k8s-yaml/dump/clay/city-list/applicationContext.xml -n crm`
@@ -138,7 +174,8 @@ spec:
 ### 更新 ConfigMap 后：
 *   使用该 ConfigMap 挂载的 Env**不会**同步更新
 *   使用该 ConfigMap 挂载的 Volume 中的数据需要一段时间（实测大概10秒）才能同步更新
-**2.secret**私钥或证书放在secret
+
+## **2.secret** 私钥或证书放在secret
 kubectl create secret --help
 ```
 Available Commands:
@@ -150,30 +187,36 @@ Available Commands:
 Usage:
   kubectl create secret [flags] [options]
 ```
-pod-secret-1.yaml
-```
+### TLS Secret
+
+Kubernetes 提供一种内置的`kubernetes.io/tls`Secret 类型，用来存放证书 及其相关密钥（通常用在 TLS 场合）。 此类数据主要提供给 Ingress 资源，用以终结 TLS 链接，不过也可以用于其他 资源或者负载。当使用此类型的 Secret 时，Secret 配置中的`data`（或`stringData`）字段必须包含`tls.key`和`tls.crt`主键，尽管 API 服务器 实际上并不会对每个键的取值作进一步的合法性检查。
+
+下面的 YAML 包含一个 TLS Secret 的配置示例：
+
+~~~yaml
 apiVersion: v1
-kind: Pod
+kind: Secret
 metadata:
-  name: pod-secret-1
-  namespace: default
-  labels:
-    app: myapp
-    tier: frontend
-  annotations:
-    magedu.com/created-by: "cluster admin"
-spec:
-  containers:
-  - name: myapp
-    image: ikubernetes/myapp:v1
-    imagePullPolicy: IfNotPresent
-    ports:
-    - name: http
-      containerPort: 80
-    env:
-    - name: MYSQL_ROOT_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: mysql-root-password
-          key: password
-```
+  name: secret-tls
+type: kubernetes.io/tls
+data:
+  # 此例中的数据被截断
+  tls.crt: |
+        MIIC2DCCAcCgAwIBAgIBATANBgkqh ...
+  tls.key: |
+        MIIEpgIBAAKCAQEA7yn3bRHQ5FHMQ ...
+
+~~~
+
+提供 TLS 类型的 Secret 仅仅是出于用户方便性考虑。 你也可以使用`Opaque`类型来保存用于 TLS 服务器与/或客户端的凭据。 不过，使用内置的 Secret 类型的有助于对凭据格式进行归一化处理，并且 API 服务器确实会检查 Secret 配置中是否提供了所需要的主键。
+
+当使用`kubectl`来创建 TLS Secret 时，你可以像下面的例子一样使用`tls`子命令：
+
+~~~shell
+kubectl create secret tls my-tls-secret \
+  --cert=path/to/cert/file \
+  --key=path/to/key/file
+
+~~~
+
+这里的公钥/私钥对都必须事先已存在。用于`--cert`的公钥证书必须是 .PEM 编码的 （Base64 编码的 DER 格式），且与`--key`所给定的私钥匹配。 私钥必须是通常所说的 PEM 私钥格式，且未加密。对这两个文件而言，PEM 格式数据 的第一行和最后一行（例如，证书所对应的`--------BEGIN CERTIFICATE-----`和`-------END CERTIFICATE----`）都不会包含在其中。

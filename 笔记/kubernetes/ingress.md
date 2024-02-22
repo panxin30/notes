@@ -69,3 +69,24 @@ spec:
 ```
 **ingress在安装时候指定了nodeport为30080和30443，所以访问时候应该域名加端口
 跳板机nginx所有80和443指向ingress所在服务器内网的30080和30443**
+# 三、k8s1.19后ingress配置有变动
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gocd-server
+  namespace: gocd
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: gocd.51sw.cc
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gocd-server
+                port:
+                  number: 8153
+```

@@ -2,8 +2,8 @@
 一、下载安装 https://nssm.cc/
 解压软件包获取路径`D:\tools\nssm-2.24\win64`
 将这个路径添加到windows全局环境变量
-点击我的电脑右键--高级系统设置--高级--环境变量，然后
-![](../images/screenshot_1577418663722.png)
+点击我的电脑右键--高级系统设置--高级--环境变量，然后选择系统变量--Path--点击编辑--
+
 二、
 nssm install deployagent
 nssm edit deployagent

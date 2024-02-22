@@ -1,0 +1,1 @@
+ 参考：https://kubernetes.io/zh/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/

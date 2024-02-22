@@ -1,5 +1,14 @@
+参考:https://kubernetes.io/zh/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/
+# 高可用k8s集群更新证书后，需要将新证书拷贝到所有主节点
+我是整个/etc/kubernets拷贝覆盖其他主节点。先做好备份。
+同时重启下服务kubelet和下面4个
+`kube-apiserver|kube-controller-manager|kube-scheduler|etcd`都重启下。
+`docker ps | grep -v pause | grep -E "etcd|scheduler|controller|apiserver" | awk '{print $1}' | xargs docker restart`
+
 # **k8s v1.14.3**
-`cd /etc/kubernetes/pki && openssl x509 -in apiserver.crt -text -noout` 确认证书是否过期
+`cd /etc/kubernetes/pki && openssl x509 -in apiserver.crt -text -noout` 
+`openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -text  |grep Not`
+确认证书是否过期
 docker 18.09.7
 现象：
 kubectl get ns
@@ -17,14 +26,20 @@ cd /etc/kubernetes/
 mv {admin.conf,controller-manager.conf,kubelet.conf,scheduler.conf} ~/
 kubeadm init phase kubeconfig all
 #重启kube-apiserver,kube-controller-manager ,kube-scheduler，etcd这4个容器
-docker ps | grep -E 'kube-apiserver|kube-controller-manager|kube-scheduler'
+docker ps | grep -v pause |grep -E 'kube-apiserver|kube-controller-manager|kube-scheduler'
+docker ps | grep -v pause | grep -E "etcd|scheduler|controller|apiserver" | awk '{print $1}' | xargs docker restart
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 ```
 **使用 kubeadm 进行证书管理**
 https://kubernetes.io/zh/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/
 # **版本1.15后**
 `kubeadm alpha certs check-expiration`检查证书是否过期
-`kubeadm alpha certs renew`命令手动更新证书 `kubeadm alpha certs renew all`
+`kubeadm alpha certs renew`命令手动更新证书
+`kubeadm alpha certs renew all`
+# **版本1.23**
+`kubeadm certs check-expiration`检查证书是否过期
+`kubeadm certs renew`**未经验证**
+`kubeadm certs renew all`**未经验证**
 **做好备份，注意观察kubelet的状态（可以用docker restart kube-api等）**
 小坑：
 `kubeadm alpha certs renew`并不会更新kubelet证书（kubelet.conf文件里面写的客户端证书），因为kubelet证书是默认开启自动更新的
@@ -51,6 +66,10 @@ cp /etc/kubernetes/admin.conf ~/.kube/config
 ~~~
 ~~~
 #重启kube-apiserver,kube-controller-manager ,kube-scheduler，etcd这4个容器
+docker ps | grep -v pause |grep -E 'kube-apiserver|kube-controller-manager|kube-scheduler|etcd'
+docker ps | grep -v pause | grep -E "etcd|scheduler|controller|apiserver" | awk '{print $1}' | xargs docker restart
+查看`tail -f /var/log/syslog`
+查看kubelet日志`journalctl -xeu kubelet`
 ~~~
 
 在升级1.15的集群证书，查看kubelet状态，报错没有bootstrap-kubelet.conf，从从节点拷贝的，1.15集群在建立的时候主节点就没有这个文件（从其他1.15集群看的。）

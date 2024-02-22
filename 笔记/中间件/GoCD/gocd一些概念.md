@@ -4,7 +4,8 @@
 **Environment Variables** 
 此处定义的环境变量是在agent上设置的，可以在您的job的tasks中使用。
 可以在多个级别上定义环境变量：在环境内，管道内，阶段内和作业内。它们遵循级联系统，其中在“环境”级别定义的环境变量被在管道级别定义的环境变量覆盖，依此类推。
-![title](https://leanote.com/api/file/getImage?fileId=5db7b588ab6441133600024c)
+![title](https://leanote.com/api/file/getImage?fileId=5db7b588ab6441133600024c)原来的图片
+![](../../../images/gocd1.png)
 **最终是job级别的环境变量优先**
 ----------
 
@@ -20,9 +21,11 @@ deploy=bw-report-service
 下游获取到这个文件，**然后根据文件内容再来进行k8s发布。**
 
 **上游构建stage将artifact到gocd自带的artefact repository**
-![title](https://leanote.com/api/file/getImage?fileId=5db6ad44ab64414a420008ef)
+![title](https://leanote.com/api/file/getImage?fileId=5db6ad44ab64414a420008ef)原来的图片
+![](../../../images/gocd2.png)
 **下游部署stage从构建stage抓取artifact**
-![title](https://leanote.com/api/file/getImage?fileId=5db6adbdab64414847000989)
+![title](https://leanote.com/api/file/getImage?fileId=5db6adbdab64414847000989)原来的图片
+![](../../../images/gocd3.png)
 **Materials**
 Pipeline dependency material
 Materials really start becoming powerful when a stage in a pipeline is used as a material for another pipeline.

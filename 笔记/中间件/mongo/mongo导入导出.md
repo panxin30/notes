@@ -18,12 +18,15 @@ mongorestore -h127.0.0.1 --port 27017 -uadmin -pWAer8R59G6 --authenticationDatab
 -----------------------------
 mongo 127.0.0.1:27017/msc-db -umsc -pabc123 flag.js
 ## **数据备份**
+AWS的mongo集群导出需要加
+--forceTableScan -d database_name
 导出的是文件夹
 `mongodump -h127.0.0.1:27017 -d msc-db -c t_tenant_i18n -u msc -p abc123 --oplog -o msc-db/`
 
 --oplog只适合于副本集，备份时候记录期间的数据变化，恢复时会更新这些变化的数据
 *****
 mongodump -h IP --port 端口 -u 用户名 -p 密码 -d 数据库 -o 文件存在路径  
+**mongodump 仅备份数据库中的文档，不备份索引，所以我们还原后，需要重新生成索引**。
 如果没有用户谁，可以去掉-u和-p。  
 如果导出本机的数据库，可以去掉-h。  
 如果是默认端口，可以去掉--port。  

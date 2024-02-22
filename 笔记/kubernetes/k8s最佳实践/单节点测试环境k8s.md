@@ -1,5 +1,15 @@
-环境：ubuntu 18.04,k8s 1.16.1,docker 18.09 数据盘使用xfs格式
-一、服务器优化
+环境：ubuntu 18.04,k8s 1.17.17,docker 19.03.15 数据盘使用xfs格式，亚马逊服务器，国内的话，相关源需要替换。
+架构：ingress+k8s+minio+nginx
+ - K8S提供微服务
+ - minio提供前端(官方镜像https://hub.docker.com/r/minio/minio/)
+ - nginx转发后端和前端服务
+ - ingress转发到nginx，使用ingress是因为可以使用cert-manager免费提供证书
+             
+记得锁定软件版本，避免不小心升级或自动升级
+`apt-mark hold containerd.io docker-buildx-plugin docker-ce docker-ce-cli docker-ce-rootless-extras docker-compose-plugin`
+ 
+一、服务器优化和更新服务器
+`apt update && apt upgrade`
 cat /etc/sysctl.conf
 ```
 net.core.somaxconn = 40480
@@ -27,10 +37,35 @@ net.ipv4.conf.all.rp_filter = 0
 net.ipv4.tcp_keepalive_time = 600
 net.ipv4.tcp_timestamps = 0
 ```
-二、kubelet优化
+二、安装docker-ce,19.03.15
+根据需求修改docker驱动
 ```
-cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+root@master01:~# cat /etc/docker/daemon.json 
+{
+  "storage-driver": "overlay2",
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "1048m",
+    "max-file": "2"
+  }
+}
 ```
+三、安装kubelet kubeadm kubectl(这里使用的是官方源，国内的话需要替换)
+```
+sudo apt-get update && sudo apt-get install -y apt-transport-https curl
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+sudo apt-get update
+sudo apt-cache madison kubeadm
+sudo apt-get install -y kubelet kubeadm kubectl
+# 或者安装指定版本 
+sudo apt -y install kubelet=1.17.17-00 kubeadm=1.17.17-00 kubectl=1.17.17-00
+sudo apt-mark hold kubelet kubeadm kubectl 锁定服务不自动更新
+```
+四、kubelet优化
 ```
 root@saas-test:~/k8s-yaml/crm-sprod# cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 
 # Note: This dropin only works with kubeadm and kubelet v1.11+
@@ -45,12 +80,41 @@ EnvironmentFile=-/etc/default/kubelet
 ExecStart=
 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS --allowed-unsafe-sysctls=kernel.msg*,net.core.somaxconn,net.ipv4.tcp_keepalive_time,net.ipv4.tcp_syncookies,net.ipv4.tcp_tw_reuse,net.ipv4.tcp_timestamps,net.ipv4.tcp_fin_timeout
 ```
+
+## Kubernetes的node默认最大pod数量为110个，所有node都达到110个时无法再调度，出现如下报错信息
+
+0/3 nodes are available: 1 node(s) had taints that the pod didn't tolerate, 2 Insufficient pods
+解决办法：
+1、增加最大pod数量
+```
+root@k8smaster ~]# vim /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf 
+添加：
+	Environment="KUBELET_NODE_MAX_PODS=--max-pods=600"
+	ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS $KUBELET_NODE_MAX_PODS
+# 将新添加的参数KUBELET_NODE_MAX_PODS，加入ExecStart
+
+```
+2、真的是内存不够了
+```
+kubectl describe node slave01
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests       Limits
+  --------           --------       ------
+  cpu                2160m (54%)    22 (550%)
+  memory             15450Mi (98%)  19964Mi (127%)
+  ephemeral-storage  0 (0%)         0 (0%)
+# pod的配置文件是从生产拷贝的，使用的内存都大，拷贝下来没有修改过。
+```
+五、初始化kubernets集群
+`kubeadm init --pod-network-cidr=192.168.0.0/16` 
+> 在k8s v1.17.X这个版本安装ingress只有安装calico这个网络插件才能成功
+
+`kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml`
 ### 修改端口范围 会自动重启
-cat /etc/kubernetes/manifests/kube-apiserver.yaml
+cat /etc/kubernetes/manifests/kube-apiserver.yaml，新增参数
 `- --service-node-port-range=80-65535`
 
-三、
-### 
 因此,svc上的nodeport会监听在所有的节点上(如果不指定,即是随机端口,由apiserver指定--service-node-port-range '30000-32767'),即使有1个pod,任意访问某台的nodeport都可以访问到这个服务
 ### 
 externalIPs 通过svc创建,在指定的node上监听端口

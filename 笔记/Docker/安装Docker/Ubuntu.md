@@ -1,5 +1,8 @@
 ### 参考文档
 *   [Docker 官方 Ubuntu 安装文档](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+
+# 记得锁定docker 版本，避免不小心升级或自动升级
+`apt-mark hold containerd.io docker-buildx-plugin docker-ce docker-ce-cli docker-ce-rootless-extras docker-compose-plugin`
 ### OS requirements
 ### 查看ubuntu发行版本
 ```
@@ -10,6 +13,8 @@ To install Docker CE, you need the 64-bit version of one of these Ubuntu version
 *   Cosmic 18.10
 *   Bionic 18.04 (LTS)
 *   Xenial 16.04 (LTS)
+# ubuntu 16.04 安装
+https://cloud.tencent.com/developer/article/1350956#
 
 ### Supported storage drivers
 Docker CE on Ubuntu supports`overlay2`,`aufs`and`btrfs`storage drivers.
@@ -60,6 +65,7 @@ sudo apt-get install docker-ce
 ```
 apt-cache madison docker-ce
 sudo apt-get install docker-ce=18.06.1~ce~3-0~ubuntu
+apt-mark hold containerd.io docker-buildx-plugin docker-ce docker-ce-cli docker-ce-rootless-extras docker-compose-plugin #锁定docker-ce版本
 ```
 ### **docker 指定存储路径**
 ```

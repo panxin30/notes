@@ -70,3 +70,5 @@ pod资源
     ExecAction：exec，通常用来嵌套一个command
     TCPSocketAction：tcpSocket，向哪个地址的哪个端口发起请求
     HTTPGetAction：httpGet，向哪个地址的哪个端口的url发起请求
+# 如何检测出程序死锁
+参考：https://kubernetes.io/zh/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/

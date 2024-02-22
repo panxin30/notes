@@ -30,6 +30,11 @@ db.getCollection('test1').remove({})
 删除用户
 db.system.users.find()
 ```
+# mongo 4.0+ 创建用户
+```
+use brokerwork
+db.createUser({user:"brokerwork",pwd:"o6RJzAF1LELzutEv",roles:[{role:"readWrite",db:"brokerwork"}],mechanisms : ["SCRAM-SHA-1"]})
+```
 ## **修改密码**
 `db.changeUserPassword('tank2','test');`
 ### **删除一条记录**
@@ -39,8 +44,17 @@ db.t_pub_user.find({ "_id" : "dd2ba7f0-e7f9-453e-b960-ebdc83b251d3"})
 _id这个是key，后面的""是值。
 db.t_customer_profiles.deleteOne({"_id" : "3fd38e17-6a78-42d8-983a-545620295c07"})
 
+db.getCollection('t_template').remove({'tenantId':{$in:[]}});
+
 db.users.find({name:/hurry/});
 db.t_product_deploy.find({url:/3308/});
+# 删除collection
+use db;
+db.collection.drop();
+# 删除db
+use db;
+db.dropDatabase()
+
 ```
 #### **创建一个监控账户，库admin**
 ```
@@ -118,3 +132,7 @@ db.t4.dropIndex({firstname: 1})
 db.t_tasks_job_T200128.dropIndex({tenantId:1})
 ```
 ## **mongo必需副本集或分片才能支持事务**
+# mongo清理了collections空间不会立即释放
+参考：https://zhuanlan.zhihu.com/p/38979077
+# 配置单节点副本集
+引用：https://driverzhang.github.io/post/mongo%E5%BC%80%E5%90%AF%E4%BA%8B%E5%8A%A1%E4%B9%8B%E5%89%AF%E6%9C%AC%E9%9B%86%E9%87%87%E5%9D%91/

@@ -16,7 +16,13 @@ Notice that the GoCD Agent independently checks out the repository, meaning that
 
 
 gocd 插件[https://github.com/gocd-contrib](https://github.com/gocd-contrib)
+```
+*Usage:*
 
+Download jar from releases & place it in`<go-server-location>/plugins/external`& restart GoCD Server.
 
-其实，你需要的是一款叫做“script-executor-task”的GoCD插件。是的，你没有看错，GoCD也是有插件的！有了这款插件后，你就可以像shell脚本一样编排指令，从而愉快地合并臃肿的task了。
+root@ali-hk-public-ops-k8s-master01:/data1/ops/godata/plugins/external# ls
+script-executor-0.3.0.jar
+```
+其实，你需要的是一款叫做“script-executor-task”的GoCD插件。有了这款插件后，你就可以像shell脚本一样编排指令，从而愉快地合并臃肿的task了。
 值得一提的是，这个插件的初衷是简化task中命令的书写和排序，而不提倡滥用它编排大量琐碎的指令。不管是用jenkins还是GoCD，最佳实践是将指令放到脚本文件中，并纳入代码版本仓库（SCM）。可以签出的脚本方便团队所有人查看，更改也有迹可循，便于协作；另一方面脚本与工具的耦合也最小（往往就是一行命令），我们将在“实现Pipeline as Code”一节中继续讨论这个话题。
